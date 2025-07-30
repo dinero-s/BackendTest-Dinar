@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  db_main:
+    image: postgres:14
+    container_name: db_main
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: db_main
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d db_main" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis_main:
+    image: redis:7
+    container_name: redis_main
+    restart: always
+    ports:
+      - '6379:6379'
+
+volumes:
+  postgres_data:
+  redis_data:
