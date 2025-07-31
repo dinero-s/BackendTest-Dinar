@@ -1,31 +1,51 @@
 version: '3.8'
 
 services:
-  db_main:
-    image: postgres:14
-    container_name: db_main
-    restart: always
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: example
       POSTGRES_DB: db_main
-    ports:
-      - '5432:5432'
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d db_main" ]
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
-      timeout: 5s
+      timeout: 3s
       retries: 5
+    volumes:
+      - pgdata:/var/lib/postgresql/data
 
-  redis_main:
+  redis:
     image: redis:7
-    container_name: redis_main
-    restart: always
+    restart: unless-stopped
     ports:
       - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:example@postgres:5432/db_main
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    command: sh -c "npm run migration:run && npm run start:dev"
+    ports:
+      - '3000:3000'
+    volumes:
+      - .:/usr/src/app
+    working_dir: /usr/src/app
 
 volumes:
-  postgres_data:
-  redis_data:
+  pgdata:

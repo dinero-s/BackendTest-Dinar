@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import * as Joi from 'joi'
+import * as Joi from 'joi';
 import { IamModule } from './iam/iam.module';
 import { UsersModule } from './users/users.module';
-import {NotesModule} from "./notes/notes.module";
+import { NotesModule } from './notes/notes.module';
+import { JwtModule } from '@nestjs/jwt';
+import * as process from 'node:process';
 
 type DBName = 'postgres';
 
@@ -13,7 +15,6 @@ type DBName = 'postgres';
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
-
         JWT_SECRET: Joi.string().required(),
         JWT_ACCESS_TTL: Joi.string().required(),
         JWT_REFRESH_TTL: Joi.string().required(),
@@ -33,7 +34,24 @@ type DBName = 'postgres';
     }),
 
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+        }),
+        JwtModule.registerAsync({
+          global: true, // 👈 это делает сервис доступным во всех модулях
+          imports: [ConfigModule],
+          inject: [ConfigService],
+          useFactory: (config: ConfigService) => ({
+            secret: config.get<string>('JWT_SECRET'),
+            signOptions: {
+              expiresIn: config.get<string>('JWT_ACCESS_TTL') || '15m',
+              issuer: config.get<string>('JWT_ISSUER'),
+              audience: config.get<string>('JWT_AUDIENCE'),
+            },
+          }),
+        }),
+      ],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         type: config.get<DBName>('DB_TYPE'),
@@ -51,7 +69,7 @@ type DBName = 'postgres';
 
     UsersModule,
     IamModule,
-    NotesModule
+    NotesModule,
   ],
   controllers: [],
   providers: [],

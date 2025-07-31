@@ -17,16 +17,14 @@ export class JwtAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthRequest>();
     const authHeader = request.headers['authorization'];
     const token = authHeader?.split(' ')[1];
-
     if (!token) {
       throw new UnauthorizedException('Токен не предоставлен');
     }
-
     try {
-      const { userId } = this.jwtService.verify<JwtPayload>(token);
-      request.user = { userId: userId };
+      const payload = this.jwtService.verify<JwtPayload>(token);
+      request.user = { userId: payload.userId };
       return true;
-    } catch {
+    } catch (err){
       throw new UnauthorizedException('Неверный токен');
     }
   }

@@ -8,13 +8,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Note } from './entities/note.entity';
 import { CreateNoteDto } from './dto/create-note.dto';
+import { NoteShareLink } from './shares/entities/note-share.entity';
 
 @Injectable()
 export class NotesService {
   constructor(
     @InjectRepository(Note) private readonly noteRepository: Repository<Note>,
+    @InjectRepository(NoteShareLink)
+    private readonly noteShareRepository: Repository<NoteShareLink>,
   ) {}
   async create(createNoteDto: CreateNoteDto, id: string) {
+    console.log(id);
     try {
       const note = this.noteRepository.create({
         title: createNoteDto.title,
@@ -26,7 +30,6 @@ export class NotesService {
 
       return note;
     } catch (error) {
-      //TODO написать интерфейс для ошибок
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (error.code === '23505') {
         throw new ConflictException(

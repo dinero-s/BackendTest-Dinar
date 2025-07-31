@@ -1,41 +1,46 @@
 import {
   Body,
-  Controller, HttpCode,
-  HttpStatus, NotFoundException,
-  Post, Res,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  NotFoundException,
+  Post,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
-  ApiOperation, ApiResponse,
+  ApiOperation,
+  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { User } from '../../users/entities/user.entity';
-import {Auth} from "./decorators/auth.decorator";
-import {AuthType} from "./enums/auth-type.enum";
-import {SignUpDto} from "./dto/sign-up.dto";
+import { Auth } from './decorators/auth.decorator';
+import { AuthType } from './enums/auth-type.enum';
+import { SignUpDto } from './dto/sign-up.dto';
 import { Throttle } from '@nestjs/throttler';
-import {SignInDto} from "./dto/sign-in.dto";
-import {InjectRepository} from "@nestjs/typeorm";
-import {Token} from "./entities/token.entity";
-import {Repository} from "typeorm";
-import {randomUUID} from "crypto";
-import {JwtService} from "@nestjs/jwt";
+import { SignInDto } from './dto/sign-in.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Token } from './entities/token.entity';
+import { Repository } from 'typeorm';
+import { randomUUID } from 'crypto';
+import { JwtService } from '@nestjs/jwt';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @ApiTags('Authentication')
 @Auth(AuthType.None)
 @Controller('auth')
 export class AuthController {
   constructor(
-      private readonly authService: AuthService,
-      @InjectRepository(Token) private readonly tokenRepository: Repository<Token>,
-      @InjectRepository(User) private readonly userRepository: Repository<User>,
-      private readonly jwtService: JwtService) {}
+    private readonly authService: AuthService,
+    @InjectRepository(Token)
+    private readonly tokenRepository: Repository<Token>,
+    @InjectRepository(User) private readonly userRepository: Repository<User>,
+    private readonly jwtService: JwtService,
+  ) {}
   @ApiOperation({
     summary: 'Регистрация пользователя',
-    description:
-        'Требования к паролю: минимум 8 символов в длину.'
+    description: 'Требования к паролю: минимум 8 символов в длину.',
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -64,28 +69,25 @@ export class AuthController {
   @Post('sign-in')
   @HttpCode(201)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async signIn(
-      @Body() signInDto: SignInDto
-  ) {
-    const { accessToken, refreshToken } = await this.authService.signIn(signInDto);
+  async signIn(@Body() signInDto: SignInDto) {
+    const { accessToken, refreshToken } =
+      await this.authService.signIn(signInDto);
     const user = await this.userRepository.findOne({
       where: { email: signInDto.email },
-      select: ['id']
+      select: ['id'],
     });
-
     if (!user) {
       throw new NotFoundException('Пользователь не найден');
     }
 
-    const decoded = this.jwtService.decode(refreshToken);
-    const tokenId = decoded.jti || randomUUID();
+    const tokenHash = await this.authService.hashToken(refreshToken);
 
     await this.tokenRepository.save({
       userId: user.id,
-      tokenId,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // +7 дней
+      tokenHash,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // +7 дней
     });
 
-    return accessToken
+    return accessToken;
   }
 }

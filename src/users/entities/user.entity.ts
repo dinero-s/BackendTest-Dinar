@@ -1,21 +1,16 @@
 import { IsEmail } from 'class-validator';
-import {
-  Column,
-  Entity,
-  OneToMany,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import {Note} from "../../notes/entities/note.entity";
+import { Note } from '../../notes/entities/note.entity';
 
 @Entity()
 export class User {
   @ApiProperty({
-    example: 1,
+    example: 'a7f3c1b09dbe4fa8b2798d1c9c9eeb4d',
     description: 'ID Пользователя',
   })
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @ApiProperty({
     example: 'somemail@somemail.com',
