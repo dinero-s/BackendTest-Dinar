@@ -63,7 +63,6 @@ export class SharesService {
       throw new NotFoundException('Ссылка недействительна или устарела');
     }
 
-    // пометить ссылку как использованную (одноразовая)
     link.used = true;
     await this.noteShareRepository.save(link);
 
