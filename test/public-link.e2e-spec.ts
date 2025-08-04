@@ -18,29 +18,27 @@ describe('Tests', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     await app.init();
 
-    // Авторизация
     const login = await request(app.getHttpServer())
       .post('/auth/sign-in')
       .send({ email: 'demo@gmail.com', password: 'Password123' });
 
-    console.log('🔐 Login:', login.status, login.body);
+    console.log('Login:', login.status, login.body);
     const loginBody = login.body as { accessToken: string };
     expect(loginBody.accessToken).toBeDefined();
     accessToken = loginBody.accessToken;
 
-    // Создание заметки
     const note = await request(app.getHttpServer())
       .post('/notes/create')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ title: 'Test Note', body: 'Content' });
 
-    console.log('📝 Note create:', note.status, note.body);
+    console.log('Note create:', note.status, note.body);
     const noteBody = note.body as { id: string };
     expect(noteBody.id).toBeDefined();
     noteId = noteBody.id;
   });
 
-  it('1️⃣ Happy Path: создать и открыть по ссылке', async () => {
+  it('1. Happy Path: создать и открыть по ссылке', async () => {
     const share = await request(app.getHttpServer())
       .post(`/notes/${noteId}/share`)
       .set('Authorization', `Bearer ${accessToken}`)
@@ -61,21 +59,21 @@ describe('Tests', () => {
     expect(publicBody.title).toBe('Test Note');
   });
 
-  it('2️⃣ Повторный запрос по использованной ссылке — 410', async () => {
+  it('2. Повторный запрос по использованной ссылке — 410', async () => {
     const secondTry = await request(app.getHttpServer()).get(
       `/notes/public/notes/${token}`,
     );
-    console.log('♻️ Second try:', secondTry.status);
+    console.log('Second try:', secondTry.status);
     expect(secondTry.status).toBe(410);
   });
 
-  it('3️⃣ Истёкший TTL — 410', async () => {
+  it('3. Истёкший TTL — 410', async () => {
     const shortLink = await request(app.getHttpServer())
       .post(`/notes/${noteId}/share`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ ttl: 0 }); // ttl = 0 минут
 
-    console.log('⏳ Short link:', shortLink.status, shortLink.body);
+    console.log('Short link:', shortLink.status, shortLink.body);
     const shortBody = shortLink.body as { token: string };
     expect(shortBody.token).toBeDefined();
     const expiredToken = shortBody.token;
@@ -85,11 +83,11 @@ describe('Tests', () => {
     const expiredTry = await request(app.getHttpServer()).get(
       `/notes/public/notes/${expiredToken}`,
     );
-    console.log('💀 Expired try:', expiredTry.status);
+    console.log('Expired try:', expiredTry.status);
     expect(expiredTry.status).toBe(410);
   });
 
-  it('4️⃣ Ревокация ссылки — 404', async () => {
+  it('4. Ревокация ссылки — 404', async () => {
     const share = await request(app.getHttpServer())
       .post(`/notes/${noteId}/share`)
       .set('Authorization', `Bearer ${accessToken}`)
@@ -103,22 +101,22 @@ describe('Tests', () => {
       .delete(`/notes/${noteId}/share/${tokenId}`)
       .set('Authorization', `Bearer ${accessToken}`);
 
-    console.log('❌ Revoke:', revoke.status);
+    console.log('Revoke:', revoke.status);
     expect(revoke.status).toBe(200);
 
     const revokedTry = await request(app.getHttpServer()).get(
       `/notes/public/notes/${token}`,
     );
-    console.log('🔒 Revoked try:', revokedTry.status);
+    console.log('Revoked try:', revokedTry.status);
     expect(revokedTry.status).toBe(404);
   });
 
-  it('6️⃣ Обновление токенов по refreshToken', async () => {
+  it('5. Обновление токенов по refreshToken', async () => {
     const login = await request(app.getHttpServer())
       .post('/auth/sign-in')
       .send({ email: 'demo@gmail.com', password: 'Password123' });
 
-    console.log('🔁 Refresh login:', login.status, login.body);
+    console.log('Refresh login:', login.status, login.body);
     const loginBody = login.body as { refreshToken: string };
     expect(loginBody.refreshToken).toBeDefined();
 
@@ -126,7 +124,7 @@ describe('Tests', () => {
       .post('/auth/refresh')
       .send({ refreshToken: loginBody.refreshToken });
 
-    console.log('🔁 Refresh tokens:', refresh.status, refresh.body);
+    console.log('Refresh tokens:', refresh.status, refresh.body);
     const refreshBody = refresh.body as {
       accessToken: string;
       refreshToken: string;
