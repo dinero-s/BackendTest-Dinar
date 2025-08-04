@@ -43,40 +43,36 @@ export class UsersService {
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      select: ['id', 'email', 'passwordHash'],
-    });
-    if (!user) throw new NotFoundException('Пользователь не найден');
-    const isCorrect = await bcrypt.compare(
-      dto.currentPassword,
-      user.passwordHash,
-    );
-    if (!isCorrect) {
-      throw new BadRequestException('Текущий пароль неверный');
-    }
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        select: ['id', 'email', 'passwordHash'],
+      });
+      if (!user) throw new NotFoundException('Пользователь не найден');
 
-    if (dto.newPassword !== dto.newPasswordConfirm) {
-      throw new BadRequestException(
-        'Новый пароль и подтверждение не совпадают',
+      const isCorrect = await bcrypt.compare(
+        dto.currentPassword,
+        user.passwordHash,
       );
+      if (!isCorrect) {
+        throw new BadRequestException('Текущий пароль неверный');
+      }
+
+      if (dto.newPassword !== dto.newPasswordConfirm) {
+        throw new BadRequestException(
+          'Новый пароль и подтверждение не совпадают',
+        );
+      }
+
+      const password = dto.newPassword;
+      const saltRounds = 10;
+      user.passwordHash = await bcrypt.hash(password, saltRounds);
+
+      await this.userRepository.save(user);
+    } catch (error) {
+      throw new InternalServerErrorException('Ошибка при смене пароля', {
+        cause: error,
+      });
     }
-    const password = dto.newPassword;
-
-    const saltRounds = 10;
-    user.passwordHash = await bcrypt.hash(password, saltRounds);
-
-    await this.userRepository.save(user);
-  }
-
-  // TODO Временные эндпоинты
-  async findAll(): Promise<User[]> {
-    return this.userRepository.find({
-      select: ['id', 'email'],
-    });
-  }
-
-  async clearUsersTable() {
-    await this.userRepository.query('TRUNCATE TABLE "user" CASCADE;');
   }
 }

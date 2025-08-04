@@ -22,6 +22,10 @@ export class Token {
   })
   tokenHash: string;
 
+  @Column({ unique: true, nullable: true })
+  @ApiProperty({ description: 'ID токена' })
+  tokenId: string;
+
   @Column({ default: false })
   @ApiProperty({ description: 'Флаг: токен отозван (logout или вручную)' })
   revoked: boolean;

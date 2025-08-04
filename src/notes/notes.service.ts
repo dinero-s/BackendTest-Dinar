@@ -30,18 +30,22 @@ export class NotesService {
 
       return note;
     } catch (error) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (error.code === '23505') {
         throw new ConflictException(
           'Заметка с таким заголовком уже существует',
+          {
+            cause: error,
+          },
         );
       }
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (error.code === '23503') {
-        // Ошибка внешнего ключа
-        throw new BadRequestException('Некорректный ID пользователя');
+        throw new BadRequestException('Некорректный ID пользователя', {
+          cause: error,
+        });
       }
-      throw new InternalServerErrorException('Ошибка при создании заметки');
+      throw new InternalServerErrorException('Ошибка при создании заметки', {
+        cause: error,
+      });
     }
   }
 }

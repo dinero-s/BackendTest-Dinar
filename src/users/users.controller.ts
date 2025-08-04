@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Get,
   HttpCode,
   HttpStatus,
   Patch,
@@ -15,9 +14,9 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { User } from './entities/user.entity';
 import { JwtAuthGuard } from '../iam/auth/guards/jwt-auth.guard';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import AuthenticatedRequest from './interfaces/authRequest.interface';
 
 @Controller('users')
 @ApiBearerAuth()
@@ -35,29 +34,8 @@ export class UsersController {
   })
   async changePassword(
     @Body() dto: ChangePasswordDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ): Promise<void> {
     await this.usersService.changePassword(req.user.userId, dto);
-  }
-
-  @Get()
-  @ApiOperation({ summary: 'Получить всех пользователей' })
-  @ApiResponse({
-    status: 200,
-    description: 'Успешный запрос',
-    type: [User],
-  })
-  async findAll(): Promise<User[]> {
-    return this.usersService.findAll();
-  }
-
-  @Get('delete')
-  @ApiOperation({ summary: 'Удалить всех пользователей' })
-  @ApiResponse({
-    status: 200,
-    description: 'Успешный запрос',
-  })
-  async clearUsersTable() {
-    return this.usersService.clearUsersTable();
   }
 }

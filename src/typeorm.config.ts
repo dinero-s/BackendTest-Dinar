@@ -1,6 +1,6 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
-// eslint-disable-next-line
-require('dotenv').config();
+import dotenv from 'dotenv';
+dotenv.config();
 
 type DBName = 'postgres';
 

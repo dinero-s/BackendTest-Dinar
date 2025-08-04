@@ -13,9 +13,6 @@ export class NoteShareLink {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
-  token: string;
-
   @Column()
   expiresAt: Date;
 
@@ -31,4 +28,7 @@ export class NoteShareLink {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @Column({ nullable: true })
+  tokenId: string;
 }

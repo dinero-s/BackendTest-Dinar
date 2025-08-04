@@ -1,4 +1,3 @@
-// src/auth/guards/jwt-auth.guard.ts
 import {
   CanActivate,
   ExecutionContext,
@@ -24,8 +23,10 @@ export class JwtAuthGuard implements CanActivate {
       const payload = this.jwtService.verify<JwtPayload>(token);
       request.user = { userId: payload.userId };
       return true;
-    } catch (err){
-      throw new UnauthorizedException('Неверный токен');
+    } catch (error) {
+      throw new UnauthorizedException('Неверный или просроченный токен', {
+        cause: error,
+      });
     }
   }
 }

@@ -4,16 +4,15 @@ import { User } from '../entities/user.entity';
 
 export class CreateUserDto extends PartialType(User) {
   @ApiProperty({
-    example: 'email@email.com',
+    example: 'demo@gmail.com',
     description: 'User email',
   })
   @IsEmail()
   email: string;
 
   @ApiProperty({
-    example: 'P@ssw0rd',
-    description:
-      'Будет сохранен как passwordHash в базе данных',
+    example: 'Password123',
+    description: 'Будет сохранен как passwordHash в базе данных',
   })
   @Length(8, 250)
   password: string;

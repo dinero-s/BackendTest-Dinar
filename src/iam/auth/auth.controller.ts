@@ -4,11 +4,13 @@ import {
   HttpCode,
   HttpStatus,
   NotFoundException,
+  Patch,
   Post,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -23,9 +25,8 @@ import { SignInDto } from './dto/sign-in.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Token } from './entities/token.entity';
 import { Repository } from 'typeorm';
-import { randomUUID } from 'crypto';
-import { JwtService } from '@nestjs/jwt';
-import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { RevokeTokenDto } from './dto/revoke-token.dto';
 
 @ApiTags('Authentication')
 @Auth(AuthType.None)
@@ -36,7 +37,6 @@ export class AuthController {
     @InjectRepository(Token)
     private readonly tokenRepository: Repository<Token>,
     @InjectRepository(User) private readonly userRepository: Repository<User>,
-    private readonly jwtService: JwtService,
   ) {}
   @ApiOperation({
     summary: 'Регистрация пользователя',
@@ -72,10 +72,12 @@ export class AuthController {
   async signIn(@Body() signInDto: SignInDto) {
     const { accessToken, refreshToken } =
       await this.authService.signIn(signInDto);
+
     const user = await this.userRepository.findOne({
       where: { email: signInDto.email },
       select: ['id'],
     });
+
     if (!user) {
       throw new NotFoundException('Пользователь не найден');
     }
@@ -85,9 +87,32 @@ export class AuthController {
     await this.tokenRepository.save({
       userId: user.id,
       tokenHash,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // +7 дней
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
 
-    return accessToken;
+    // TODO вывод refreshToken сделан для удобства тестирования
+    return {
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    };
+  }
+
+  @Post('refresh')
+  @ApiOperation({ summary: 'Обновление access и refresh токенов' })
+  @ApiResponse({ status: 200, description: 'Успешное обновление токенов' })
+  @ApiNotFoundResponse({ description: 'Недействительный refresh токен' })
+  @ApiBadRequestResponse({ description: 'Невалидный формат токена' })
+  @Post('refresh')
+  refresh(@Body() dto: RefreshTokenDto) {
+    return this.authService.refreshTokens(dto.refreshToken);
+  }
+
+  @Patch('revoke')
+  @ApiOperation({ summary: 'Отзыв refresh токена' })
+  @ApiResponse({ status: 200, description: 'Токен успешно отозван' })
+  @ApiNotFoundResponse({ description: 'Токен не найден' })
+  @ApiBadRequestResponse({ description: 'Невалидный токен' })
+  async revoke(@Body() dto: RevokeTokenDto): Promise<void> {
+    return this.authService.revokeRefreshToken(dto.refreshToken);
   }
 }

@@ -6,7 +6,6 @@ import { IamModule } from './iam/iam.module';
 import { UsersModule } from './users/users.module';
 import { NotesModule } from './notes/notes.module';
 import { JwtModule } from '@nestjs/jwt';
-import * as process from 'node:process';
 
 type DBName = 'postgres';
 
@@ -21,15 +20,15 @@ type DBName = 'postgres';
         JWT_ISSUER: Joi.string().required(),
         JWT_AUDIENCE: Joi.string().required(),
 
+        JWT_SHARE_SECRET: Joi.string().required(),
+        JWT_SHARE_TTL: Joi.string().required(),
+
         DB_TYPE: Joi.string().valid('postgres').required(),
         DB_HOST: Joi.string().required(),
         DB_PORT: Joi.number().integer().required(),
         DB_USERNAME: Joi.string().required(),
         DB_PASSWORD: Joi.string().required(),
         DB_NAME: Joi.string().required(),
-
-        REDIS_HOST: Joi.string().required(),
-        REDIS_PORT: Joi.number().integer().required(),
       }),
     }),
 
@@ -37,15 +36,16 @@ type DBName = 'postgres';
       imports: [
         ConfigModule.forRoot({
           isGlobal: true,
+          envFilePath: '.env',
         }),
         JwtModule.registerAsync({
-          global: true, // 👈 это делает сервис доступным во всех модулях
+          global: true,
           imports: [ConfigModule],
           inject: [ConfigService],
           useFactory: (config: ConfigService) => ({
             secret: config.get<string>('JWT_SECRET'),
             signOptions: {
-              expiresIn: config.get<string>('JWT_ACCESS_TTL') || '15m',
+              expiresIn: config.get<string>('JWT_ACCESS_TTL'),
               issuer: config.get<string>('JWT_ISSUER'),
               audience: config.get<string>('JWT_AUDIENCE'),
             },

@@ -10,9 +10,8 @@ export class ChangePasswordDto {
   currentPassword: string;
 
   @ApiProperty({
-    example: 'NewP@ssw0rd1',
-    description:
-      'Новый пароль (не менее 8 символов, хотя бы 1 заглавная, 1 строчная буква, цифра и спецсимвол)',
+    example: 'NewPassword123',
+    description: 'Новый пароль (не менее 8 символов)',
     minLength: 8,
   })
   @IsString()
@@ -20,7 +19,7 @@ export class ChangePasswordDto {
   newPassword: string;
 
   @ApiProperty({
-    example: 'NewP@ssw0rd1',
+    example: 'NewP@NewPassword123',
     description: 'Подтверждение нового пароля',
   })
   @IsString()

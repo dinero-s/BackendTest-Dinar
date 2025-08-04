@@ -9,15 +9,12 @@ git clone https://github.com/dinero-s/BackendTest-Dinar
 npm install
 Запустите проект через Docker:
 docker compose up --build
-Примените миграции и создайте сид-данные:
-npm run migration:run
+Создайте сид-данные:
 npm run seed
 
 2. Основные команды
 
 npm run start:dev — запуск приложения в режиме разработки
-npm run migration:run — применить миграции
-npm run migration:generate — создать миграцию
 npm run seed — сидинг тестовых данных
 docker compose down -v — остановка и удаление контейнеров и томов
 
@@ -29,8 +26,8 @@ Email: demo@gmail.com
 3. Аутентификация
 
 Access Token (валиден 15 минут) — передаётся в заголовке Authorization
-Refresh Token (валиден 7 дней) — передаётся в httpOnly cookie или заголовке
-Используется ротация refresh-токенов, хранение в БД/Redis, защита от reuse
+Refresh Token (валиден 7 дней) — передаётся в заголовке
+Используется ротация refresh-токенов, хранение в БД
 Поддерживаются logout и revoke токенов
 
 
@@ -47,27 +44,43 @@ DELETE /notes/:id/share/:tokenId — отозвать ссылку
 npm run test:e2e
 Покрываются сценарии:
 
-[//]: # (Регистрация и вход)
+- Happy Path: Создание и открытие по публичной ссылке
 
-[//]: # (Обновление токенов)
+- Повторный запрос по использованной ссылке → 410 Gone
 
-[//]: # (Создание/ревокация публичных ссылок)
+- Доступ по истёкшей ссылке → 410 Gone
 
-[//]: # (Доступ по одноразовой ссылке)
+- Ревокация ссылки → 404 Not Found
+
+- Обновление токенов по refreshToken
 
 
 6. Переменные окружения (.env)
 
-DATABASE_URL=postgres://postgres:example@postgres:5432/db_main
-REDIS_HOST=redis
-REDIS_PORT=6379
-JWT_SECRET=supersecret
+# JWT
+JWT_SECRET=3f8a7b2e5c1d9f0a6b4c7e2d5f8a1b3c6d9e0f2a4b5c7d8e1f3a6b9c2d5e8f1
+JWT_ACCESS_TTL=15m
+JWT_REFRESH_TTL=7d
+JWT_ISSUER=your-app-name
+JWT_AUDIENCE=your-app-name
+JWT_SALT_ROUNDS=10
+
+JWT_SHARE_SECRET=3d3dss4tt5td9f0a6b4c7e2d5f8a15tg533rfwewfw3434q33d3
+JWT_SHARE_TTL=5m
+
+# DB
+DB_TYPE=postgres
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=example
+DB_NAME=db_main
 
 
 7. Swagger-документация
 
 Swagger доступен по адресу:
-http://localhost:3000/api
+http://localhost:3000/docs
 
 
 8. Автор:

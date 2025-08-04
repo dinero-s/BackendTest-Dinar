@@ -3,7 +3,8 @@ import {
   Injectable,
   UnauthorizedException,
   NotFoundException,
-  // ForbiddenException,
+  InternalServerErrorException,
+  BadRequestException,
 } from '@nestjs/common';
 import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up.dto';
@@ -13,8 +14,7 @@ import { User } from '../../users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { Token } from './entities/token.entity';
-// import { v4 as uuidv4 } from 'uuid';
-// import { RefreshTokenPayload } from './interfaces/refresh-token-payload.interface';
+import * as process from 'node:process';
 
 @Injectable()
 export class AuthService {
@@ -53,33 +53,87 @@ export class AuthService {
     return this.generateToken(user);
   }
 
-  async revokeRefreshToken(tokenId: string): Promise<void> {
-    const token = await this.tokenRepository.findOne({
-      where: { tokenHash: tokenId },
-    });
-    if (!token) throw new NotFoundException('Токен не найден');
+  async revokeRefreshToken(refreshToken: string): Promise<void> {
+    try {
+      const payload = this.jwtService.verify<{
+        sub: string;
+        tokenId: string;
+      }>(refreshToken, {
+        secret: process.env.JWT_SECRET,
+      });
 
-    token.revoked = true;
-    await this.tokenRepository.save(token);
+      const token = await this.tokenRepository.findOne({
+        where: { tokenId: payload.tokenId },
+      });
+
+      if (!token) {
+        throw new NotFoundException('Токен не найден');
+      }
+      await this.tokenRepository.remove(token);
+    } catch (error) {
+      console.error('Ошибка при отзыве токена:', error);
+      throw new InternalServerErrorException('Ошибка при отзыве токена', {
+        cause: error,
+      });
+    }
   }
 
-  generateToken(user: User) {
+  generateToken(user: { id: string }) {
     const accessToken = this.jwtService.sign(
       { userId: user.id },
       {
-        expiresIn: '15m',
+        expiresIn: process.env.JWT_ACCESS_TTL,
       },
     );
     const refreshToken = this.jwtService.sign(
       { userId: user.id },
       {
-        expiresIn: '7d',
+        expiresIn: process.env.JWT_REFRESH_TTL,
       },
     );
     return { accessToken, refreshToken };
   }
 
+  async refreshTokens(
+    refreshToken: string,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const payload = this.jwtService.verify<{ userId: string }>(refreshToken, {
+      secret: process.env.JWT_REFRESH_SECRET,
+    });
+
+    const tokens = await this.tokenRepository.find({
+      where: { userId: payload.userId },
+    });
+
+    let matched: Token | null = null;
+
+    for (const token of tokens) {
+      const isMatch = await this.compareToken(refreshToken, token.tokenHash);
+      if (isMatch) {
+        matched = token;
+        break;
+      }
+    }
+
+    if (!matched) {
+      throw new NotFoundException('Неверный refresh token');
+    }
+
+    const { accessToken, refreshToken: newRefreshToken } = this.generateToken({
+      id: payload.userId,
+    });
+
+    matched.tokenHash = await this.hashToken(newRefreshToken);
+    await this.tokenRepository.save(matched);
+
+    return { accessToken, refreshToken: newRefreshToken };
+  }
+
   async hashToken(token: string): Promise<string> {
     return await bcrypt.hash(token, 10);
+  }
+
+  async compareToken(token: string, hash: string): Promise<boolean> {
+    return await bcrypt.compare(token, hash);
   }
 }

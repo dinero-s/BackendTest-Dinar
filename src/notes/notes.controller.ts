@@ -29,7 +29,8 @@ import { SharesService } from './shares/shares.service';
 @ApiBearerAuth()
 @ApiTags('Notes')
 export class NotesController {
-  constructor(private readonly notesService: NotesService,
+  constructor(
+    private readonly notesService: NotesService,
     private readonly sharesService: SharesService,
   ) {}
 
@@ -50,7 +51,8 @@ export class NotesController {
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Post('/notes/:id/share')
+  @Post('/:id/share')
+  @ApiOperation({ summary: 'Создать ссылку' })
   createShareLink(
     @Param('id') noteId: string,
     @Body() dto: CreateShareLinkDto,
@@ -67,17 +69,19 @@ export class NotesController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('/notes/:id/share')
+  @Get('/:userId/share')
+  @ApiOperation({ summary: 'Список ссылок владельцу' })
   getNoteShareLinks(
-    @Param('id', ParseUUIDPipe) noteId: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
   ): Promise<NoteShareLinkDto[]> {
-    return this.sharesService.getNoteShareLinks(noteId);
+    return this.sharesService.getNoteShareLinks(userId);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Delete('/notes/:id/share/:tokenId')
+  @Delete('/:noteId/share/:tokenId')
+  @ApiOperation({ summary: 'Ревокация ссылки' })
   revokeShareLink(
-    @Param('id', ParseUUIDPipe) noteId: string,
+    @Param('noteId', ParseUUIDPipe) noteId: string,
     @Param('tokenId', ParseUUIDPipe) tokenId: string,
   ): Promise<void> {
     return this.sharesService.revokeNoteShareLink(noteId, tokenId);

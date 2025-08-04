@@ -1,20 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, Length, IsBoolean, IsNotEmpty } from 'class-validator';
+import { IsEmail, Length } from 'class-validator';
 
 export class SignUpDto {
   @ApiProperty({
     title: 'Email',
-    example: 'email@email.com',
-    description: 'User email',
+    example: 'demo@gmail.com',
+    description: 'email пользователя',
   })
   @IsEmail()
   email: string;
 
-  @ApiProperty({
-    title: 'Password',
-    example: 'P@ssw0rd',
-    description:
-      'Пароль должен быть не менее 8 символов и содержать как минимум одну цифру, один спец.символ, одну строчную и одну прописную латинские буквы',
+@ApiProperty({
+    title: 'Пароль',
+    example: 'Password123',
+    description: 'Пароль должен быть не менее 8 символов',
   })
   @Length(8, 127)
   password: string;
